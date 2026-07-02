@@ -2,11 +2,11 @@
 
 ## MMIO region
 
-Base address: assigned by QEMU machine/device tree  
-Region size:  0x1000  
-Access size:  32-bit  
-Endian:       native QEMU device endian  
-FIFO depth:   16 bytes  
+Base address: assigned by QEMU machine/device tree
+Region size:  0x1000
+Access size:  32-bit
+Endian:       native QEMU device endian
+FIFO depth:   16 bytes
 
 ## Registers
 
