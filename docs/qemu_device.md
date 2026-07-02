@@ -44,6 +44,20 @@ Not implemented yet:
 - qtest coverage
 - Linux driver
 
+## Device responsibilities
+
+The device model owns the hardware-visible state. The Linux driver should not
+need hidden knowledge beyond the documented register map.
+
+Required device guarantees:
+
+- ID and VERSION are stable across reset.
+- RESET returns the device to a deterministic state.
+- unsupported register bits are ignored.
+- unsupported register accesses are logged as guest errors.
+- writable IRQ status bits use write-one-to-clear semantics.
+- FIFO state and STATUS bits remain internally consistent.
+
 ## Temporary TX/RX behavior
 
 Milestone 2 does not implement a real FIFO yet.
@@ -61,6 +75,43 @@ Example:
     read RX_DATA  = 'H'
 
 This behavior will later move behind a real TX FIFO, RX FIFO, processing timer, and IRQ path.
+
+## Final FIFO and timer model
+
+The final model should use separate TX and RX FIFOs with a fixed depth of 16
+bytes each.
+
+Processing flow:
+
+1. Guest writes a byte to TX_DATA.
+2. Device pushes the byte into the TX FIFO.
+3. Device schedules processing if it is idle.
+4. Timer callback pops one TX byte.
+5. Timer callback transforms the byte.
+6. Device pushes the result into the RX FIFO.
+7. Device updates STATUS and IRQ_STATUS.
+8. Device asserts the IRQ line if enabled pending bits exist.
+
+The timer is important because it makes blocking reads, blocking writes, and
+`poll()` behavior meaningful in the Linux driver.
+
+## Migration state
+
+The device should preserve guest-visible hardware state across QEMU migration
+or snapshot operations.
+
+Final migration state should include:
+
+- CONTROL
+- STATUS-derived state
+- IRQ_STATUS
+- IRQ_ENABLE
+- TX FIFO contents and indexes
+- RX FIFO contents and indexes
+- processing timer state where practical
+- debug counters that are useful and stable enough to migrate
+
+If a debug-only field is not migrated, the code should document why.
 
 ## Integration model
 
