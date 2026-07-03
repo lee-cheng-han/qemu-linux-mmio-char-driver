@@ -50,9 +50,26 @@ Expected early smoke checks:
 
 ## Step 3: Add QTest
 
-Once QEMU builds with the device, add QTest coverage under `qemu/tests/qtest`.
-The first tests should validate the stable register contract before FIFO and IRQ
-behavior are added.
+QTest coverage starts under `qemu/tests/qtest`.
+
+The first skeleton file is:
+
+```text
+qemu/tests/qtest/qemu_mbox-test.c
+```
+
+It validates the stable register contract before FIFO and IRQ behavior are
+added:
+
+- ID
+- VERSION
+- FIFO_DEPTH
+- RESET
+- temporary TX/RX behavior
+- byte `0x00` TX count handling
+
+The skeleton becomes runnable after a QEMU machine or QTest harness maps
+`qemu-mbox` at the test base address.
 
 ## Step 4: Add FIFO And IRQ Behavior
 

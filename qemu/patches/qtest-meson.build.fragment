@@ -1,0 +1,2 @@
+# Add to QEMU tests/qtest/meson.build after qemu-mbox test-machine support exists.
+qtests_aarch64 += ['qemu_mbox-test']

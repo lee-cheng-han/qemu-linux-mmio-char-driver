@@ -21,7 +21,15 @@ make check
 
 ## QEMU Device Tests
 
-QTest should be added after QEMU build integration exists.
+The initial QTest skeleton lives at:
+
+```text
+qemu/tests/qtest/qemu_mbox-test.c
+```
+
+It becomes runnable after the device is instantiated in a QEMU machine or QTest
+harness. The current skeleton assumes a placeholder machine named
+`qemu-mbox-test-machine` and a device base address of `0x10000000`.
 
 Initial QTest cases:
 
@@ -29,7 +37,10 @@ Initial QTest cases:
 - read VERSION register
 - verify FIFO_DEPTH
 - write RESET and verify reset state
-- reject invalid access sizes through guest-error logging where practical
+- verify temporary TX/RX smoke behavior
+- verify byte `0x00` is counted as written TX data
+- reject invalid access sizes through guest-error logging where practical in a
+  later runnable test
 
 FIFO QTest cases:
 

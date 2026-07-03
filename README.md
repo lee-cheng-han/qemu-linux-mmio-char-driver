@@ -37,6 +37,7 @@ Implemented:
 - Testing, bring-up, and demo plans
 - Initial QEMU MMIO device source files
 - QEMU integration notes and Meson/Kconfig/device-enable fragments
+- QTest skeleton for the minimal MMIO register contract
 - ID, VERSION, CONTROL, STATUS, TX_DATA, RX_DATA, IRQ_STATUS, IRQ_ENABLE,
   TX_COUNT, RX_COUNT, FIFO_DEPTH, and RESET register definitions
 - Temporary single-byte TX/RX behavior for early smoke testing
@@ -45,7 +46,7 @@ Implemented:
 Not implemented yet:
 
 - QEMU runtime instantiation in a machine or test harness
-- QTest coverage
+- runnable QTest coverage inside a QEMU checkout
 - Real TX/RX FIFO behavior
 - Processing timer and interrupt line
 - Linux platform character driver
@@ -57,7 +58,8 @@ Not implemented yet:
 
 1. Lock down architecture, register map, driver API, and testing docs.
 2. Integrate the minimal QEMU MMIO device into a QEMU source tree.
-3. Add QTest coverage for ID, VERSION, RESET, and basic register behavior.
+3. Add QTest skeleton coverage for ID, VERSION, RESET, and basic register
+   behavior.
 4. Replace temporary TX/RX behavior with real 16-byte TX and RX FIFOs.
 5. Add processing latency and IRQ generation.
 6. Implement the Linux platform character driver probe and remove paths.

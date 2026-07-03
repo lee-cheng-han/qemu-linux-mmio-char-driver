@@ -21,8 +21,11 @@ check:
 	test -f qemu/patches/meson.build.fragment
 	test -f qemu/patches/Kconfig.fragment
 	test -f qemu/patches/aarch64-softmmu.default.mak.fragment
+	test -f qemu/patches/qtest-meson.build.fragment
+	test -f qemu/tests/qtest/qemu_mbox-test.c
 	grep -q "SPDX-License-Identifier" qemu/hw/misc/qemu_mbox.c
 	grep -q "SPDX-License-Identifier" qemu/include/hw/misc/qemu_mbox.h
+	grep -q "SPDX-License-Identifier" qemu/tests/qtest/qemu_mbox-test.c
 	@if git grep -n '[[:blank:]]$$' -- '*.c' '*.h' '*.md' '*.yml' '*.yaml' '*.fragment'; then \
 		echo "Trailing whitespace found"; \
 		exit 1; \

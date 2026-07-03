@@ -69,6 +69,13 @@ hw/misc/qemu_mbox.c
 include/hw/misc/qemu_mbox.h
 ```
 
+The first QTest patch should later add:
+
+```text
+tests/qtest/meson.build
+tests/qtest/qemu_mbox-test.c
+```
+
 This first integration step is compile-oriented. Runtime instantiation is a
 separate step because a `SysBusDevice` also needs a machine or test harness to
 map its MMIO region and wire its IRQ line.
@@ -124,3 +131,21 @@ The instantiation code must:
 
 Runtime instantiation should be added in a separate patch from the initial
 compile integration so each step stays reviewable.
+
+## QTest Skeleton
+
+This repository includes a QTest skeleton at:
+
+```text
+qemu/tests/qtest/qemu_mbox-test.c
+```
+
+and the corresponding Meson fragment at:
+
+```text
+qemu/patches/qtest-meson.build.fragment
+```
+
+The test skeleton expects a future QEMU machine or QTest harness named
+`qemu-mbox-test-machine` that maps the device at `0x10000000`. Those names are
+placeholders until runtime instantiation is added.
