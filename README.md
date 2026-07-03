@@ -36,6 +36,7 @@ Implemented:
 - Planned Linux driver API and ioctl UAPI structures
 - Testing, bring-up, and demo plans
 - Initial QEMU MMIO device source files
+- QEMU integration notes and Meson/Kconfig/device-enable fragments
 - ID, VERSION, CONTROL, STATUS, TX_DATA, RX_DATA, IRQ_STATUS, IRQ_ENABLE,
   TX_COUNT, RX_COUNT, FIFO_DEPTH, and RESET register definitions
 - Temporary single-byte TX/RX behavior for early smoke testing
@@ -43,7 +44,7 @@ Implemented:
 
 Not implemented yet:
 
-- QEMU Meson/Kconfig integration
+- QEMU runtime instantiation in a machine or test harness
 - QTest coverage
 - Real TX/RX FIFO behavior
 - Processing timer and interrupt line
@@ -66,8 +67,11 @@ Not implemented yet:
 10. Expand CI to build QEMU, build the kernel module, run QTest, and run
     Linux-side tests.
 
-Step 0, the project contract and planning milestone, is complete. The next
-engineering milestone is QEMU build integration for the minimal MMIO device.
+Step 0, the project contract and planning milestone, is complete. Step 1, the
+source-level minimal QEMU MMIO device alignment, is complete. Step 2, the QEMU
+integration package for applying the device to a real QEMU checkout, is complete
+for this repository. The next verification task is applying it to an external
+QEMU checkout and building `aarch64-softmmu`.
 
 ## Documentation
 

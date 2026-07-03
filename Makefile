@@ -17,13 +17,17 @@ check:
 	test -f docs/demo.md
 	test -f qemu/hw/misc/qemu_mbox.c
 	test -f qemu/include/hw/misc/qemu_mbox.h
+	test -f qemu/patches/README.md
+	test -f qemu/patches/meson.build.fragment
+	test -f qemu/patches/Kconfig.fragment
+	test -f qemu/patches/aarch64-softmmu.default.mak.fragment
 	grep -q "SPDX-License-Identifier" qemu/hw/misc/qemu_mbox.c
 	grep -q "SPDX-License-Identifier" qemu/include/hw/misc/qemu_mbox.h
-	@if git grep -n '[[:blank:]]$$' -- '*.c' '*.h' '*.md' '*.yml' '*.yaml'; then \
+	@if git grep -n '[[:blank:]]$$' -- '*.c' '*.h' '*.md' '*.yml' '*.yaml' '*.fragment'; then \
 		echo "Trailing whitespace found"; \
 		exit 1; \
 	fi
-	@if git grep -n "$$(printf '\t')" -- '*.md' '*.yml' '*.yaml'; then \
+	@if git grep -n "$$(printf '\t')" -- '*.md' '*.yml' '*.yaml' '*.fragment'; then \
 		echo "Tab characters found in Markdown/YAML"; \
 		exit 1; \
 	fi

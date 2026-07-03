@@ -1,0 +1,2 @@
+# Add to QEMU hw/misc/meson.build.
+softmmu_ss.add(when: 'CONFIG_QEMU_MBOX', if_true: files('qemu_mbox.c'))

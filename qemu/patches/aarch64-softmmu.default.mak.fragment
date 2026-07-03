@@ -1,0 +1,2 @@
+# Optional local-development entry for QEMU configs/devices/aarch64-softmmu/default.mak.
+CONFIG_QEMU_MBOX=y

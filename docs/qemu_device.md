@@ -124,6 +124,10 @@ They are intended to become a patch against a real QEMU source tree:
 
     qemu/hw/misc/qemu_mbox.c
     qemu/include/hw/misc/qemu_mbox.h
-    qemu/patches/0001-hw-misc-add-qemu-mbox-device.patch
+    qemu/patches/README.md
+    qemu/patches/meson.build.fragment
+    qemu/patches/Kconfig.fragment
+    qemu/patches/aarch64-softmmu.default.mak.fragment
 
-Later milestones will add the Meson/Kconfig integration needed to compile the device inside QEMU.
+The first integration target is build-system wiring. Runtime instantiation will
+follow after the minimal build path is documented and testable.

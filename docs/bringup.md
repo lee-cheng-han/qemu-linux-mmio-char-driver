@@ -25,9 +25,21 @@ Planned work:
 
 - copy `qemu/hw/misc/qemu_mbox.c` into a QEMU source tree
 - copy `qemu/include/hw/misc/qemu_mbox.h` into the matching include path
-- add Meson build entries
-- add Kconfig entries
+- add the Meson entry from `qemu/patches/meson.build.fragment`
+- add the Kconfig entry from `qemu/patches/Kconfig.fragment`
+- optionally enable local aarch64 builds with
+  `qemu/patches/aarch64-softmmu.default.mak.fragment`
 - instantiate the device from a machine, command-line helper, or test harness
+
+The integration notes live in `qemu/patches/README.md`.
+
+This first QEMU step is compile-oriented. Runtime instantiation is tracked as a
+separate task because a sysbus device needs a machine or test harness to map its
+MMIO region and connect IRQ lines.
+
+Step 2 is complete for this repository when the QEMU payload files, Meson
+fragment, Kconfig fragment, optional target enablement fragment, and integration
+instructions are all present and covered by `make check`.
 
 Expected early smoke checks:
 
