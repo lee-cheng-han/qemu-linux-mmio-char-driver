@@ -82,6 +82,7 @@ struct QemuMboxState {
      */
     uint32_t last_tx_data;
     uint32_t last_rx_data;
+    uint32_t last_tx_valid;
 
     uint64_t mmio_read_count;
     uint64_t mmio_write_count;

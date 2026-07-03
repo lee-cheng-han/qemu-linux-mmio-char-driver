@@ -49,6 +49,7 @@ static void qemu_mbox_reset_regs(QemuMboxState *s)
     s->irq_enable = 0;
     s->last_tx_data = 0;
     s->last_rx_data = 0;
+    s->last_tx_valid = 0;
 }
 
 static uint64_t qemu_mbox_read(void *opaque, hwaddr offset, unsigned size)
@@ -82,6 +83,10 @@ static uint64_t qemu_mbox_read(void *opaque, hwaddr offset, unsigned size)
          * Milestone 2 has no RX FIFO yet.
          * Reading RX_DATA returns the last processed byte and clears RX_READY.
          */
+        if (!(s->status & QEMU_MBOX_STATUS_RX_READY)) {
+            return 0;
+        }
+
         s->status &= ~QEMU_MBOX_STATUS_RX_READY;
         return s->last_rx_data;
 
@@ -92,7 +97,7 @@ static uint64_t qemu_mbox_read(void *opaque, hwaddr offset, unsigned size)
         return s->irq_enable;
 
     case QEMU_MBOX_REG_TX_COUNT:
-        return s->last_tx_data ? 1 : 0;
+        return s->last_tx_valid ? 1 : 0;
 
     case QEMU_MBOX_REG_RX_COUNT:
         return (s->status & QEMU_MBOX_STATUS_RX_READY) ? 1 : 0;
@@ -143,6 +148,7 @@ static void qemu_mbox_write(void *opaque, hwaddr offset, uint64_t value,
          * Store one byte, process it immediately, and mark RX ready.
          */
         s->last_tx_data = value & 0xff;
+        s->last_tx_valid = 1;
         s->last_rx_data = qemu_mbox_process_byte(s->last_tx_data);
         s->status |= QEMU_MBOX_STATUS_RX_READY;
         break;
@@ -206,6 +212,7 @@ static const VMStateDescription vmstate_qemu_mbox = {
         VMSTATE_UINT32(irq_enable, QemuMboxState),
         VMSTATE_UINT32(last_tx_data, QemuMboxState),
         VMSTATE_UINT32(last_rx_data, QemuMboxState),
+        VMSTATE_UINT32(last_tx_valid, QemuMboxState),
         VMSTATE_UINT64(mmio_read_count, QemuMboxState),
         VMSTATE_UINT64(mmio_write_count, QemuMboxState),
         VMSTATE_END_OF_LIST()

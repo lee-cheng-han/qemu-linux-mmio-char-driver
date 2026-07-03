@@ -74,6 +74,9 @@ Example:
     write TX_DATA = 'h'
     read RX_DATA  = 'H'
 
+Reading RX_DATA again before another TX_DATA write returns zero because
+STATUS.RX_READY has been cleared.
+
 This behavior will later move behind a real TX FIFO, RX FIFO, processing timer, and IRQ path.
 
 ## Final FIFO and timer model

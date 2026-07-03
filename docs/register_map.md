@@ -153,6 +153,7 @@ Temporary behavior:
 - The byte is immediately processed.
 - RX_DATA returns the processed byte.
 - Reading RX_DATA clears STATUS.RX_READY.
+- Reading RX_DATA while STATUS.RX_READY is clear returns zero.
 - TX_COUNT returns 1 if a byte has been written.
 - RX_COUNT returns 1 if STATUS.RX_READY is set.
 - FIFO_DEPTH always returns 16.
