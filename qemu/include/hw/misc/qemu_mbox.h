@@ -10,6 +10,7 @@
 #define HW_MISC_QEMU_MBOX_H
 
 #include "hw/sysbus.h"
+#include "qemu/timer.h"
 #include "qom/object.h"
 
 #define TYPE_QEMU_MBOX "virt-mbox"
@@ -17,6 +18,7 @@ OBJECT_DECLARE_SIMPLE_TYPE(QemuMboxState, QEMU_MBOX)
 
 #define QEMU_MBOX_MMIO_SIZE       0x1000
 #define QEMU_MBOX_FIFO_DEPTH      16
+#define QEMU_MBOX_PROCESS_DELAY_NS 1000000ULL
 
 #define QEMU_MBOX_ID_VALUE        0x514d424fU  /* "QMBO" */
 #define QEMU_MBOX_VERSION_VALUE   0x00010000U  /* v1.0 */
@@ -84,6 +86,8 @@ struct QemuMboxState {
     uint32_t rx_head;
     uint32_t rx_tail;
     uint32_t rx_count;
+    QEMUTimer *process_timer;
+    bool processing;
 
     uint64_t mmio_read_count;
     uint64_t mmio_write_count;

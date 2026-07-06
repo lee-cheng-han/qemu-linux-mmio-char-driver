@@ -64,7 +64,8 @@ Interpretation:
 Writes to unsupported CONTROL bits are ignored.
 
 `CONTROL.RESET` is self-clearing. A write with the RESET bit set performs a
-soft reset, then stores only the remaining valid non-reset control bits.
+soft reset, cancels pending processing, then stores only the remaining valid
+non-reset control bits.
 
 ## STATUS bits
 
@@ -146,15 +147,15 @@ other bytes unchanged
 This rule exists to make end-to-end tests easy to inspect. It can later be
 replaced by a richer simulated workload without changing the driver API.
 
-## Current Step 4 behavior
+## Current behavior
 
-Step 4 implements real TX and RX FIFO state. Processing is still synchronous
-until Step 5 adds a timer.
+The device implements real TX and RX FIFO state with timer-backed processing.
 
 Current behavior:
 
 - TX_DATA pushes one byte into the TX FIFO.
-- The device drains TX into RX immediately while RX has free space.
+- A QEMU timer processes one TX byte into RX per tick while RX has free space.
+- STATUS.BUSY is set while processing is scheduled.
 - RX_DATA returns the processed byte.
 - Reading RX_DATA clears STATUS.RX_READY.
 - Reading RX_DATA while STATUS.RX_READY is clear returns zero.
@@ -166,4 +167,4 @@ Current behavior:
 - TX_DATA writes while TX FIFO is full are rejected and set STATUS.ERROR.
 - FIFO_DEPTH always returns 16.
 
-Timer-backed processing and IRQ line behavior are added in later steps.
+IRQ line behavior is added in a later step.

@@ -46,6 +46,7 @@ Implemented:
 - ID, VERSION, CONTROL, STATUS, TX_DATA, RX_DATA, IRQ_STATUS, IRQ_ENABLE,
   TX_COUNT, RX_COUNT, FIFO_DEPTH, and RESET register definitions
 - Real TX/RX FIFO state in the QEMU device model
+- Timer-backed QEMU processing path with BUSY status
 - Initial repository hygiene CI
 - Concurrency, lifetime-safety, compat ioctl, observability, and robustness
   testing roadmap updates
@@ -59,7 +60,7 @@ Not implemented yet:
 
 - QEMU runtime instantiation in a machine or test harness
 - runnable QTest coverage inside a QEMU checkout
-- Processing timer and interrupt line
+- Interrupt line
 - Linux platform character driver
 - `/dev/vmbox0`
 - userspace regression tests

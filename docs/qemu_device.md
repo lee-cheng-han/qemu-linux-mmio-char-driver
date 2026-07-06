@@ -14,9 +14,10 @@ The eventual character device node will be:
 
     /dev/vmbox0
 
-## Step 4 scope
+## Current QEMU Device Scope
 
-Step 4 implements the FIFO-backed QEMU MMIO device model.
+The QEMU model implements FIFO-backed MMIO registers and timer-backed
+processing.
 
 Implemented:
 
@@ -35,6 +36,8 @@ Implemented:
 - TX_COUNT register
 - RX_COUNT register
 - FIFO_DEPTH register
+- processing timer
+- BUSY status bit
 - IRQ_STATUS storage
 - IRQ_ENABLE storage
 - RESET register
@@ -42,7 +45,6 @@ Implemented:
 
 Not implemented yet:
 
-- processing timer
 - interrupt line
 - QOM debug properties
 - Linux driver
@@ -61,13 +63,11 @@ Required device guarantees:
 - writable IRQ status bits use write-one-to-clear semantics.
 - FIFO state and STATUS bits remain internally consistent.
 
-## Step 4 FIFO behavior
+## FIFO and timer behavior
 
-Step 4 implements real TX and RX FIFO state, but processing is still
-synchronous. Timer-backed processing is added in Step 5.
-
-Writes to TX_DATA push one byte into the TX FIFO. The device drains TX into RX
-immediately while RX has space.
+Writes to TX_DATA push one byte into the TX FIFO. If processing is possible,
+the device schedules a QEMU virtual-clock timer and sets STATUS.BUSY. Each timer
+tick processes one TX byte and pushes the result into RX if RX has space.
 
 The current processing rule is:
 
@@ -77,6 +77,9 @@ The current processing rule is:
 Example:
 
     write TX_DATA = 'h'
+    TX_COUNT      = 1
+    STATUS.BUSY   = 1
+    timer fires
     TX_COUNT      = 0
     RX_COUNT      = 1
     read RX_DATA  = 'H'
@@ -84,13 +87,15 @@ Example:
 Reading RX_DATA again before another TX_DATA write returns zero because
 STATUS.RX_READY has been cleared.
 
-When RX is full, additional TX_DATA writes accumulate in the TX FIFO. If TX is
-also full, additional TX_DATA writes are rejected and STATUS.ERROR is set.
+When RX is full, processing pauses and additional TX_DATA writes accumulate in
+the TX FIFO. If TX is also full, additional TX_DATA writes are rejected and
+STATUS.ERROR is set. Reading RX_DATA creates RX space and allows processing to
+resume if TX still contains data.
 
 ## Final FIFO and timer model
 
-The final model should use separate TX and RX FIFOs with a fixed depth of 16
-bytes each.
+The final IRQ-capable model should use the same separate TX and RX FIFOs with a
+fixed depth of 16 bytes each.
 
 Processing flow:
 

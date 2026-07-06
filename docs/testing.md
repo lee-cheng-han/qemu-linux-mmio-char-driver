@@ -37,8 +37,9 @@ Initial QTest cases:
 - read VERSION register
 - verify FIFO_DEPTH
 - write RESET and verify reset state
-- verify FIFO-backed TX/RX smoke behavior
+- verify timer-backed FIFO TX/RX smoke behavior
 - verify byte `0x00` is accepted and returned through RX
+- verify BUSY is set while processing is pending
 - verify RX full and TX full status
 - verify TX overflow sets error status
 - reject invalid access sizes through guest-error logging where practical in a

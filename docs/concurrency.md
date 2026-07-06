@@ -3,19 +3,19 @@
 # Concurrency And Locking
 
 This document records the execution-context assumptions for the virtual mailbox
-device model and the planned Linux `vmbox` driver. The goal is to make Step 4.5
-explicit before adding timer, IRQ, and blocking I/O behavior.
+device model and the planned Linux `vmbox` driver. The goal is to keep FIFO,
+timer, IRQ, and blocking I/O behavior reviewable as the project grows.
 
 ## QEMU Device Model
 
 The QEMU-side FIFO state belongs entirely to the emulated `virt-mbox` device.
 The current implementation executes FIFO operations from the device MMIO access
-path. Step 5 will also call the FIFO helpers from the QEMU timer callback.
+path and from the processing timer callback.
 
 Current assumptions:
 
 - FIFO helpers run in the QEMU device context.
-- Step 5 timer processing runs in the same QEMU main-loop context.
+- Timer processing runs in the same QEMU main-loop context.
 - No pthread mutex is needed for the current model.
 - No guest-visible FIFO state is shared with another host thread.
 - No IOThread currently owns the device.
@@ -42,9 +42,9 @@ FIFO helpers should remain small and side-effect limited:
 This separation keeps state transitions readable and makes QTest failures easier
 to diagnose.
 
-Step 4 uses synchronous processing: writes to TX_DATA push one byte into TX, and
-the device immediately drains TX into RX while RX has space. Step 5 will replace
-that immediate drain with timer-backed processing.
+Writes to TX_DATA push one byte into TX and schedule a QEMU virtual-clock
+timer. Each timer tick moves at most one byte from TX to RX while RX has space.
+If RX is full, processing pauses until software reads RX_DATA and frees space.
 
 ## Linux Driver Locking Plan
 

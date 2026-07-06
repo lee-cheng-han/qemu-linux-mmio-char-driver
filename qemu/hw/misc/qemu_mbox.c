@@ -2,33 +2,22 @@
 /*
  * Virtual Mailbox MMIO Device
  *
- * FIFO-backed MMIO register model for virt-mbox.
- *
- * Step 4 scope:
- * - expose ID/VERSION registers
- * - expose CONTROL/STATUS registers
- * - support real TX/RX FIFO state
- * - support RESET register
- * - support IRQ_STATUS/IRQ_ENABLE storage only
- *
- * Not implemented yet:
- * - processing timer
- * - interrupt line
- * - QOM debug properties
+ * FIFO-backed MMIO register model for a small virtual mailbox device.
  */
 
 #include "qemu/osdep.h"
 #include "qemu/log.h"
+#include "qemu/timer.h"
 #include "migration/vmstate.h"
 #include "hw/misc/qemu_mbox.h"
+
+static void qemu_mbox_schedule_processing(QemuMboxState *s);
 
 static uint8_t qemu_mbox_process_byte(uint8_t value)
 {
     /*
-     * Step 4 still processes synchronously.
-     *
-     * Step 5 moves this behind a timer so blocking I/O and poll wakeups
-     * exercise an asynchronous device path.
+     * Deterministic test transform: lowercase ASCII input is returned as
+     * uppercase, while all other byte values are preserved.
      */
     if (value >= 'a' && value <= 'z') {
         value = value - 'a' + 'A';
@@ -59,10 +48,9 @@ static void qemu_mbox_update_status(QemuMboxState *s)
 /*
  * FIFO helper convention:
  *
- * - called from the QEMU device context in Step 4
- * - also callable from the QEMU timer callback once Step 5 adds delayed
- *   processing
- * - no pthread locking is needed unless the device is later moved to an
+ * - called from the QEMU device context
+ * - safe to call from a QEMU timer callback in the same main-loop context
+ * - no pthread locking is needed unless the device moves to an
  *   IOThread or another concurrent host execution context
  * - helpers update only FIFO storage/index/count state; status, IRQ, and timer
  *   decisions stay in separate helpers
@@ -95,25 +83,56 @@ static bool qemu_mbox_fifo_pop(uint8_t *fifo, uint32_t *head,
     return true;
 }
 
-static void qemu_mbox_process_pending(QemuMboxState *s)
+static void qemu_mbox_process_one(QemuMboxState *s)
 {
-    /*
-     * Step 4 synchronous processing keeps the FIFO model testable before timer
-     * and IRQ support exists. Step 5 moves this drain into a QEMU timer.
-     */
-    while (s->tx_count > 0 && s->rx_count < QEMU_MBOX_FIFO_DEPTH) {
-        uint8_t value;
+    uint8_t value;
 
-        qemu_mbox_fifo_pop(s->tx_fifo, &s->tx_head, &s->tx_count, &value);
-        value = qemu_mbox_process_byte(value);
-        qemu_mbox_fifo_push(s->rx_fifo, &s->rx_tail, &s->rx_count, value);
+    if (s->tx_count == 0 || s->rx_count == QEMU_MBOX_FIFO_DEPTH) {
+        return;
     }
 
+    qemu_mbox_fifo_pop(s->tx_fifo, &s->tx_head, &s->tx_count, &value);
+    value = qemu_mbox_process_byte(value);
+    qemu_mbox_fifo_push(s->rx_fifo, &s->rx_tail, &s->rx_count, value);
+}
+
+static void qemu_mbox_process_timer(void *opaque)
+{
+    QemuMboxState *s = opaque;
+
+    s->processing = false;
+    qemu_mbox_process_one(s);
+    qemu_mbox_schedule_processing(s);
+}
+
+static void qemu_mbox_schedule_processing(QemuMboxState *s)
+{
+    if (s->tx_count == 0 || s->rx_count == QEMU_MBOX_FIFO_DEPTH) {
+        s->processing = false;
+        s->status &= ~QEMU_MBOX_STATUS_BUSY;
+        qemu_mbox_update_status(s);
+        return;
+    }
+
+    if (!s->process_timer || s->processing) {
+        qemu_mbox_update_status(s);
+        return;
+    }
+
+    s->processing = true;
+    s->status |= QEMU_MBOX_STATUS_BUSY;
+    timer_mod(s->process_timer,
+              qemu_clock_get_ns(QEMU_CLOCK_VIRTUAL) +
+              QEMU_MBOX_PROCESS_DELAY_NS);
     qemu_mbox_update_status(s);
 }
 
 static void qemu_mbox_reset_regs(QemuMboxState *s)
 {
+    if (s->process_timer) {
+        timer_del(s->process_timer);
+    }
+
     s->control = 0;
     s->status = 0;
     s->irq_status = 0;
@@ -126,6 +145,7 @@ static void qemu_mbox_reset_regs(QemuMboxState *s)
     s->rx_head = 0;
     s->rx_tail = 0;
     s->rx_count = 0;
+    s->processing = false;
 }
 
 static uint64_t qemu_mbox_read(void *opaque, hwaddr offset, unsigned size)
@@ -165,7 +185,7 @@ static uint64_t qemu_mbox_read(void *opaque, hwaddr offset, unsigned size)
             return 0;
         }
 
-        qemu_mbox_process_pending(s);
+        qemu_mbox_schedule_processing(s);
         return value;
     }
 
@@ -229,13 +249,13 @@ static void qemu_mbox_write(void *opaque, hwaddr offset, uint64_t value,
             break;
         }
 
-        qemu_mbox_process_pending(s);
+        qemu_mbox_schedule_processing(s);
         break;
 
     case QEMU_MBOX_REG_IRQ_STATUS:
         /*
          * Write-one-to-clear behavior.
-         * Real IRQ line handling is added in a later milestone.
+         * IRQ line assertion is handled separately once an IRQ output exists.
          */
         s->irq_status &= ~(value & QEMU_MBOX_IRQ_VALID_MASK);
         break;
@@ -297,6 +317,8 @@ static const VMStateDescription vmstate_qemu_mbox = {
         VMSTATE_UINT32(rx_head, QemuMboxState),
         VMSTATE_UINT32(rx_tail, QemuMboxState),
         VMSTATE_UINT32(rx_count, QemuMboxState),
+        VMSTATE_TIMER_PTR(process_timer, QemuMboxState),
+        VMSTATE_BOOL(processing, QemuMboxState),
         VMSTATE_UINT64(mmio_read_count, QemuMboxState),
         VMSTATE_UINT64(mmio_write_count, QemuMboxState),
         VMSTATE_END_OF_LIST()
@@ -317,7 +339,20 @@ static void qemu_mbox_init(Object *obj)
 
     sysbus_init_mmio(sbd, &s->mmio);
 
+    s->process_timer = timer_new_ns(QEMU_CLOCK_VIRTUAL,
+                                    qemu_mbox_process_timer,
+                                    s);
     qemu_mbox_reset_regs(s);
+}
+
+static void qemu_mbox_finalize(Object *obj)
+{
+    QemuMboxState *s = QEMU_MBOX(obj);
+
+    if (s->process_timer) {
+        timer_free(s->process_timer);
+        s->process_timer = NULL;
+    }
 }
 
 static void qemu_mbox_class_init(ObjectClass *klass, const void *data)
@@ -336,6 +371,7 @@ static const TypeInfo qemu_mbox_info = {
     .parent = TYPE_SYS_BUS_DEVICE,
     .instance_size = sizeof(QemuMboxState),
     .instance_init = qemu_mbox_init,
+    .instance_finalize = qemu_mbox_finalize,
     .class_init = qemu_mbox_class_init,
 };
 

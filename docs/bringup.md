@@ -121,6 +121,10 @@ Build:
 - result moved into RX FIFO
 - timer continues until TX FIFO is empty
 
+Status: implemented in the project-owned QEMU source. External QEMU compile
+and runnable QTest verification still require applying the integration package
+to a real QEMU checkout.
+
 ## Step 6: IRQ Support In QEMU
 
 Goal: raise interrupts when device state changes.

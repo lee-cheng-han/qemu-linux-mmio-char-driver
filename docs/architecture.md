@@ -28,14 +28,13 @@ is intentionally simple:
 - FIFO occupancy registers.
 - A soft reset command.
 
-The current QEMU model implements the register surface and real TX/RX FIFO
-state. Later milestones replace synchronous FIFO processing with timer-backed
-processing delay and interrupt generation.
+The current QEMU model implements the register surface, real TX/RX FIFO state,
+and timer-backed processing delay. Later milestones add interrupt generation.
 
 ## QEMU Device Model
 
 The QEMU device is a `SysBusDevice` named `virt-mbox`. It owns one MMIO memory
-region and later will own one IRQ line.
+region and one processing timer, and later will own one IRQ line.
 
 The final QEMU model should provide:
 

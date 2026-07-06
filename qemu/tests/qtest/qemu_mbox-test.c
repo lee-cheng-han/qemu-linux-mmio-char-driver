@@ -11,6 +11,7 @@
 
 #define QEMU_MBOX_TEST_MACHINE "virt-mbox-test-machine"
 #define QEMU_MBOX_TEST_BASE    0x10000000U
+#define QEMU_MBOX_PROCESS_DELAY_NS 1000000ULL
 
 #define QEMU_MBOX_ID_VALUE        0x514d424fU
 #define QEMU_MBOX_VERSION_VALUE   0x00010000U
@@ -31,6 +32,7 @@
 
 #define QEMU_MBOX_CTRL_ENABLE     (1U << 0)
 #define QEMU_MBOX_CTRL_IRQ_ENABLE (1U << 3)
+#define QEMU_MBOX_STATUS_BUSY     (1U << 0)
 #define QEMU_MBOX_STATUS_RX_READY (1U << 1)
 #define QEMU_MBOX_STATUS_TX_FULL  (1U << 2)
 #define QEMU_MBOX_STATUS_RX_FULL  (1U << 3)
@@ -50,6 +52,11 @@ static void qemu_mbox_writel(uint32_t reg, uint32_t value)
 static void qemu_mbox_reset(void)
 {
     qemu_mbox_writel(QEMU_MBOX_REG_RESET, 1);
+}
+
+static void qemu_mbox_step_processing(void)
+{
+    clock_step(QEMU_MBOX_PROCESS_DELAY_NS);
 }
 
 static void test_qemu_mbox_id_version(void)
@@ -87,6 +94,14 @@ static void test_qemu_mbox_fifo_tx_rx(void)
 
     qemu_mbox_writel(QEMU_MBOX_REG_TX_DATA, 'h');
 
+    g_assert_cmpuint(qemu_mbox_readl(QEMU_MBOX_REG_TX_COUNT), ==, 1);
+    g_assert_cmpuint(qemu_mbox_readl(QEMU_MBOX_REG_RX_COUNT), ==, 0);
+    g_assert_cmphex(qemu_mbox_readl(QEMU_MBOX_REG_STATUS) &
+                    QEMU_MBOX_STATUS_BUSY, ==,
+                    QEMU_MBOX_STATUS_BUSY);
+
+    qemu_mbox_step_processing();
+
     g_assert_cmpuint(qemu_mbox_readl(QEMU_MBOX_REG_TX_COUNT), ==, 0);
     g_assert_cmpuint(qemu_mbox_readl(QEMU_MBOX_REG_RX_COUNT), ==, 1);
     g_assert_cmphex(qemu_mbox_readl(QEMU_MBOX_REG_STATUS) &
@@ -103,6 +118,8 @@ static void test_qemu_mbox_zero_byte_tx_count(void)
 
     qemu_mbox_writel(QEMU_MBOX_REG_TX_DATA, 0);
 
+    g_assert_cmpuint(qemu_mbox_readl(QEMU_MBOX_REG_TX_COUNT), ==, 1);
+    qemu_mbox_step_processing();
     g_assert_cmpuint(qemu_mbox_readl(QEMU_MBOX_REG_TX_COUNT), ==, 0);
     g_assert_cmpuint(qemu_mbox_readl(QEMU_MBOX_REG_RX_COUNT), ==, 1);
     g_assert_cmpuint(qemu_mbox_readl(QEMU_MBOX_REG_RX_DATA), ==, 0);
@@ -117,6 +134,7 @@ static void test_qemu_mbox_fifo_full_status(void)
 
     for (i = 0; i < QEMU_MBOX_FIFO_DEPTH; i++) {
         qemu_mbox_writel(QEMU_MBOX_REG_TX_DATA, 'a' + i);
+        qemu_mbox_step_processing();
     }
 
     g_assert_cmpuint(qemu_mbox_readl(QEMU_MBOX_REG_RX_COUNT), ==,

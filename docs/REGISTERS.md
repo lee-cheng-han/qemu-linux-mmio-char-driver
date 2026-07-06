@@ -23,8 +23,8 @@ MMIO access requirements:
 | 0x04 | VERSION | R | 0x00010000 | 31:16 major, 15:0 minor | Hardware interface version | None |
 | 0x08 | CONTROL | R/W | 0x00000000 | bit 0 ENABLE, bit 1 RESET, bit 2 LOOPBACK, bit 3 IRQ_ENABLE | Device control bits | RESET is self-clearing and resets device state |
 | 0x0c | STATUS | R | 0x00000000 | bit 0 BUSY, bit 1 RX_READY, bit 2 TX_FULL, bit 3 RX_FULL, bit 4 ERROR | Device status | Derived from internal state |
-| 0x10 | TX_DATA | W | 0x00000000 | 7:0 TX byte | Push one byte into TX FIFO | May update TX_COUNT, RX_COUNT, STATUS, and processing state |
-| 0x14 | RX_DATA | R | 0x00000000 | 7:0 RX byte | Pop one byte from RX path | Clears RX_READY when RX becomes empty |
+| 0x10 | TX_DATA | W | 0x00000000 | 7:0 TX byte | Push one byte into TX FIFO | May update TX_COUNT, STATUS, and schedule processing |
+| 0x14 | RX_DATA | R | 0x00000000 | 7:0 RX byte | Pop one byte from RX path | Clears RX_READY when RX becomes empty; may resume processing if TX is pending |
 | 0x18 | IRQ_STATUS | W1C | 0x00000000 | bit 0 RX_READY, bit 1 TX_SPACE, bit 2 ERROR, bit 3 DONE | Pending interrupt bits | Write one to clear pending bits |
 | 0x1c | IRQ_ENABLE | R/W | 0x00000000 | bits match IRQ_STATUS | Per-source interrupt enable mask | May change IRQ line assertion |
 | 0x20 | TX_COUNT | R | 0x00000000 | 7:0 count | TX FIFO occupancy | None |
@@ -66,8 +66,8 @@ implemented after the baseline FIFO and IRQ behavior are stable.
 The IRQ line is asserted only when `CONTROL.IRQ_ENABLE` is set and at least one
 pending `IRQ_STATUS` bit is also enabled in `IRQ_ENABLE`.
 
-## Step 4 Processing Note
+## Processing Note
 
-Step 4 uses real TX/RX FIFO state but still processes synchronously. TX_DATA
-writes are pushed into TX and drained into RX while RX has free space. Step 5
-will move processing behind a QEMU timer and make BUSY meaningful.
+The device uses real TX/RX FIFO state and timer-backed processing. TX_DATA
+writes are pushed into TX, STATUS.BUSY is set when processing is scheduled, and
+one TX byte is transformed into RX per timer tick while RX has free space.
