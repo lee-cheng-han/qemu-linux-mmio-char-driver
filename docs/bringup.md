@@ -220,6 +220,12 @@ Build:
 - `-ENODEV` behavior after removal
 - single-open policy with `-EBUSY` for a second opener
 
+Status: initial lifetime scaffolding exists in the driver skeleton: explicit
+state allocation, `kref`, `device_gone`, single-open state storage, wait queues,
+and common teardown that disables IRQ generation, synchronizes/frees the IRQ,
+and wakes waiters. Character-device open/release enforcement is now wired into
+the Step 9 skeleton.
+
 ## Step 9: Character Device Registration
 
 Goal: create `/dev/vmbox0`.
@@ -235,6 +241,11 @@ Build:
 - `.owner = THIS_MODULE`
 - single-open enforcement
 
+Status: implemented in the driver skeleton. The module allocates one device
+number, creates a class, registers `/dev/vmbox0`, wires `cdev` open/release
+callbacks, enforces single-open with `-EBUSY`, and uses `no_llseek`. Real data
+movement is still Step 10.
+
 ## Step 9.5: Module Unload Safety
 
 Goal: ensure the module can be inserted, removed, and reinserted cleanly.
@@ -246,6 +257,11 @@ Build:
 - correct init/exit cleanup ordering
 - common teardown helper shared by platform `.remove()` and module exit paths
 - repeated insmod/rmmod test plan
+
+Status: module init/exit paths exist. Module exit unregisters the platform
+driver first so per-device `.remove()` runs before class and device-number
+teardown. The per-device cleanup path is shared through `vmbox_teardown()`;
+external insmod/rmmod testing still requires a real kernel build.
 
 ## Step 10: read() And write()
 

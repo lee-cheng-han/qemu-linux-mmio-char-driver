@@ -50,6 +50,9 @@ Implemented:
 - QEMU IRQ line support with sticky IRQ_STATUS and IRQ_ENABLE masking
 - Linux `vmbox` platform driver skeleton with MMIO probe validation and IRQ
   request
+- Initial Linux driver lifetime state for safe remove/unbind handling
+- `/dev/vmbox0` registration with single-open `open()`/`release()` policy
+- Module init/exit cleanup for char-device and platform-driver state
 - Initial repository hygiene CI
 - Concurrency, lifetime-safety, compat ioctl, observability, and robustness
   testing roadmap updates
@@ -63,8 +66,8 @@ Not implemented yet:
 
 - QEMU runtime instantiation in a machine or test harness
 - runnable QTest coverage inside a QEMU checkout
-- Linux character-device registration and file operations
-- `/dev/vmbox0`
+- Linux read/write/poll/ioctl file operations
+- `/dev/vmbox0` read/write/poll/ioctl behavior
 - userspace regression tests
 - full build and boot CI
 
