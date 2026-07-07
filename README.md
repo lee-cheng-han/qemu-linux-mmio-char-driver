@@ -52,6 +52,8 @@ Implemented:
   request
 - Initial Linux driver lifetime state for safe remove/unbind handling
 - `/dev/vmbox0` registration with single-open `open()`/`release()` policy
+- Basic `/dev/vmbox0` read/write data movement over MMIO
+- Blocking/non-blocking read/write behavior, `poll()`, and ioctl UAPI
 - Module init/exit cleanup for char-device and platform-driver state
 - Initial repository hygiene CI
 - Concurrency, lifetime-safety, compat ioctl, observability, and robustness
@@ -66,8 +68,7 @@ Not implemented yet:
 
 - QEMU runtime instantiation in a machine or test harness
 - runnable QTest coverage inside a QEMU checkout
-- Linux read/write/poll/ioctl file operations
-- `/dev/vmbox0` read/write/poll/ioctl behavior
+- sysfs/debugfs observability
 - userspace regression tests
 - full build and boot CI
 

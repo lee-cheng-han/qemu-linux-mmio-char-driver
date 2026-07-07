@@ -277,6 +277,11 @@ Build:
 - short read/write behavior
 - error paths
 
+Status: implemented as immediate short I/O. `read()` drains available RX FIFO
+bytes into userspace, `write()` pushes bytes while TX FIFO has space, both
+return `-ENODEV` after removal and `-EFAULT` on bad userspace pointers. Short
+I/O is supported when the FIFO cannot satisfy the full request immediately.
+
 ## Step 11: Blocking And Non-Blocking I/O
 
 Goal: real Linux blocking behavior.
@@ -291,6 +296,10 @@ Build:
 - IRQ-driven wakeups
 - `device_gone` handling in wait conditions
 
+Status: implemented. Blocking read/write sleep on wait queues, non-blocking
+files return `-EAGAIN`, interrupted waits return `-ERESTARTSYS`, and removal
+wakes waiters so they return `-ENODEV`.
+
 ## Step 12: poll() Support
 
 Goal: event-driven userspace support.
@@ -300,6 +309,10 @@ Return:
 - `POLLIN | POLLRDNORM` when RX data exists
 - `POLLOUT | POLLWRNORM` when TX space exists
 - `POLLERR` when device error is set
+
+Status: implemented. `poll()` registers both wait queues, reports RX/TX
+readiness from MMIO FIFO counters, and reports device removal or hardware error
+with `POLLERR`.
 
 ## Step 13: ioctl() UAPI
 
@@ -316,9 +329,10 @@ Build:
 - validation for bad magic, unknown command, bad pointer, invalid mode, and
   nonzero reserved fields
 
-The documented size constants are placeholders until the real UAPI structs are
-defined. Step 13 should finalize the struct layouts first, then add guards for
-those exact sizes.
+Status: implemented. The UAPI header defines fixed-size status, stats, and mode
+structs plus reset/status/stats/mode ioctls. The driver includes ABI size
+guards for those exact layouts and implements `.compat_ioctl` by reusing the
+native handler because the UAPI contains only fixed-width integers.
 
 ## Step 14: sysfs, debugfs, And Observability
 

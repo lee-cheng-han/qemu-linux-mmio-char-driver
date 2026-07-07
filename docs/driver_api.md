@@ -59,14 +59,13 @@ miss a wakeup.
 
 ## Ioctl Plan
 
-The UAPI header will live under `kernel/include/uapi/linux/` once the kernel
-driver starts. The planned path is:
+The UAPI header lives under:
 
 ```text
 kernel/include/uapi/linux/vmbox.h
 ```
 
-Planned commands:
+Implemented commands:
 
 | Command | Direction | Purpose |
 |---|---:|---|
@@ -75,7 +74,7 @@ Planned commands:
 | `VMBOX_IOC_GET_STATS` | read | Return driver-visible counters. |
 | `VMBOX_IOC_SET_MODE` | write | Configure supported driver mode bits. |
 
-Planned UAPI shapes:
+UAPI shapes:
 
 ```c
 #define VMBOX_IOC_MAGIC 'v'
@@ -109,11 +108,8 @@ struct vmbox_mode {
 };
 ```
 
-The driver or UAPI implementation should include compile-time ABI size guards,
-for example with `static_assert()` or `BUILD_BUG_ON()`, so accidental struct
-growth cannot silently break userspace ABI expectations.
-
-Planned guards:
+The driver includes compile-time ABI size guards so accidental struct growth
+cannot silently break userspace ABI expectations:
 
 ```c
 static_assert(sizeof(struct vmbox_status) == 32);
@@ -121,10 +117,7 @@ static_assert(sizeof(struct vmbox_stats) == 72);
 static_assert(sizeof(struct vmbox_mode) == 8);
 ```
 
-These numeric sizes are placeholders until the UAPI header is implemented. Once
-`kernel/include/uapi/linux/vmbox.h` defines the final structs, the constants
-should be generated from that exact layout decision and then treated as ABI
-guards.
+These numeric sizes are now tied to the implemented UAPI layout.
 
 Validation requirements:
 
@@ -137,11 +130,11 @@ Validation requirements:
 - keep UAPI structs fixed-width and naturally aligned
 - reserve fields for future extension
 
-The driver should implement `.compat_ioctl` under `CONFIG_COMPAT`. It may reuse
-the native ioctl handler because all planned UAPI structs use fixed-width
-integer fields and contain no embedded userspace pointers.
+The driver implements `.compat_ioctl` under `CONFIG_COMPAT` by reusing the
+native ioctl handler because all UAPI structs use fixed-width integer fields and
+contain no embedded userspace pointers.
 
-Planned source comment:
+Source comment:
 
 ```c
 /*
