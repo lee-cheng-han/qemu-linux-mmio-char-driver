@@ -28,8 +28,10 @@ check:
 	test -f qemu/patches/qtest-meson.build.fragment
 	test -f qemu/tests/qtest/qemu_mbox-test.c
 	test -f kernel/Documentation/devicetree/bindings/misc/virt,mbox.yaml
+	test -f kernel/drivers/misc/vmbox.c
 	test -f kernel/drivers/misc/Kconfig.fragment
 	test -f kernel/drivers/misc/Makefile.fragment
+	test -f kernel/include/uapi/linux/vmbox.h
 	test -f scripts/udev/99-vmbox.rules
 	test -f tests/fuzz/README.md
 	grep -q "SPDX-License-Identifier" qemu/hw/misc/qemu_mbox.c
@@ -37,6 +39,8 @@ check:
 	grep -q "SPDX-License-Identifier" qemu/tests/qtest/qemu_mbox-test.c
 	grep -q "SPDX-License-Identifier" docs/REGISTERS.md
 	grep -q "SPDX-License-Identifier" kernel/Documentation/devicetree/bindings/misc/virt,mbox.yaml
+	grep -q "SPDX-License-Identifier" kernel/drivers/misc/vmbox.c
+	grep -q "SPDX-License-Identifier" kernel/include/uapi/linux/vmbox.h
 	grep -q "SPDX-License-Identifier" scripts/udev/99-vmbox.rules
 	@if git grep -n '[[:blank:]]$$' -- '*.c' '*.h' '*.md' '*.yml' '*.yaml' '*.fragment' '*.rules'; then \
 		echo "Trailing whitespace found"; \

@@ -6,6 +6,8 @@ F:	docs/
 F:	kernel/Documentation/devicetree/bindings/misc/virt,mbox.yaml
 F:	kernel/drivers/misc/Kconfig.fragment
 F:	kernel/drivers/misc/Makefile.fragment
+F:	kernel/drivers/misc/vmbox.c
+F:	kernel/include/uapi/linux/vmbox.h
 F:	qemu/hw/misc/qemu_mbox.c
 F:	qemu/include/hw/misc/qemu_mbox.h
 F:	qemu/patches/

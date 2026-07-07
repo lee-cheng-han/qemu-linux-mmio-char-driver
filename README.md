@@ -48,6 +48,8 @@ Implemented:
 - Real TX/RX FIFO state in the QEMU device model
 - Timer-backed QEMU processing path with BUSY status
 - QEMU IRQ line support with sticky IRQ_STATUS and IRQ_ENABLE masking
+- Linux `vmbox` platform driver skeleton with MMIO probe validation and IRQ
+  request
 - Initial repository hygiene CI
 - Concurrency, lifetime-safety, compat ioctl, observability, and robustness
   testing roadmap updates
@@ -61,7 +63,7 @@ Not implemented yet:
 
 - QEMU runtime instantiation in a machine or test harness
 - runnable QTest coverage inside a QEMU checkout
-- Linux platform character driver
+- Linux character-device registration and file operations
 - `/dev/vmbox0`
 - userspace regression tests
 - full build and boot CI

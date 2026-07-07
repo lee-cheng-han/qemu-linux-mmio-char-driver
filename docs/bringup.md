@@ -200,6 +200,11 @@ Probe should:
 Validate the binding schema through the kernel devicetree binding and
 dt-schema flow.
 
+Status: skeleton driver source, UAPI header path, Kconfig fragment, Makefile
+fragment, and devicetree binding draft exist in this repository. External
+kernel build and dt-schema validation still require applying the fragments to a
+real Linux kernel checkout.
+
 ## Step 8.5: Device Lifetime And Remove Safety
 
 Goal: make the driver safe if the device is removed while userspace still has
