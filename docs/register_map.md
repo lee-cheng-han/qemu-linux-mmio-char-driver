@@ -167,4 +167,5 @@ Current behavior:
 - TX_DATA writes while TX FIFO is full are rejected and set STATUS.ERROR.
 - FIFO_DEPTH always returns 16.
 
-IRQ line behavior is added in a later step.
+The QEMU model now implements the IRQ line using `CONTROL.IRQ_ENABLE`,
+`IRQ_ENABLE`, and sticky `IRQ_STATUS` bits.

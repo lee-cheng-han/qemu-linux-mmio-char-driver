@@ -9,6 +9,7 @@
 #ifndef HW_MISC_QEMU_MBOX_H
 #define HW_MISC_QEMU_MBOX_H
 
+#include "hw/irq.h"
 #include "hw/sysbus.h"
 #include "qemu/timer.h"
 #include "qom/object.h"
@@ -72,6 +73,7 @@ struct QemuMboxState {
     SysBusDevice parent_obj;
 
     MemoryRegion mmio;
+    qemu_irq irq;
 
     uint32_t control;
     uint32_t status;

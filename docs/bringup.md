@@ -150,6 +150,10 @@ Also update QEMU migration/snapshot support:
 - migrate IRQ status and enable state
 - document any intentionally non-migrated debug-only fields
 
+Status: implemented in the project-owned QEMU source. External QEMU compile
+and runnable QTest verification still require applying the integration package
+to a real QEMU checkout.
+
 ## Step 7: QTest Expansion
 
 Goal: test the real QEMU hardware model.

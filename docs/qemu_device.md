@@ -16,8 +16,8 @@ The eventual character device node will be:
 
 ## Current QEMU Device Scope
 
-The QEMU model implements FIFO-backed MMIO registers and timer-backed
-processing.
+The QEMU model implements FIFO-backed MMIO registers, timer-backed processing,
+and interrupt signaling.
 
 Implemented:
 
@@ -38,14 +38,14 @@ Implemented:
 - FIFO_DEPTH register
 - processing timer
 - BUSY status bit
-- IRQ_STATUS storage
-- IRQ_ENABLE storage
+- IRQ_STATUS event bits
+- IRQ_ENABLE masking
+- interrupt output line
 - RESET register
 - VMState migration fields for FIFO contents and indexes
 
 Not implemented yet:
 
-- interrupt line
 - QOM debug properties
 - Linux driver
 
@@ -61,6 +61,7 @@ Required device guarantees:
 - unsupported register bits are ignored.
 - unsupported register accesses are logged as guest errors.
 - writable IRQ status bits use write-one-to-clear semantics.
+- the IRQ output follows global enable and per-source mask state.
 - FIFO state and STATUS bits remain internally consistent.
 
 ## FIFO and timer behavior
@@ -92,10 +93,9 @@ the TX FIFO. If TX is also full, additional TX_DATA writes are rejected and
 STATUS.ERROR is set. Reading RX_DATA creates RX space and allows processing to
 resume if TX still contains data.
 
-## Final FIFO and timer model
+## FIFO, timer, and IRQ model
 
-The final IRQ-capable model should use the same separate TX and RX FIFOs with a
-fixed depth of 16 bytes each.
+The model uses separate TX and RX FIFOs with a fixed depth of 16 bytes each.
 
 Processing flow:
 
@@ -105,7 +105,7 @@ Processing flow:
 4. Timer callback pops one TX byte.
 5. Timer callback transforms the byte.
 6. Device pushes the result into the RX FIFO.
-7. Device updates STATUS and IRQ_STATUS.
+7. Device updates STATUS and sticky IRQ_STATUS bits.
 8. Device asserts the IRQ line if enabled pending bits exist.
 
 The timer is important because it makes blocking reads, blocking writes, and

@@ -23,9 +23,9 @@ MMIO access requirements:
 | 0x04 | VERSION | R | 0x00010000 | 31:16 major, 15:0 minor | Hardware interface version | None |
 | 0x08 | CONTROL | R/W | 0x00000000 | bit 0 ENABLE, bit 1 RESET, bit 2 LOOPBACK, bit 3 IRQ_ENABLE | Device control bits | RESET is self-clearing and resets device state |
 | 0x0c | STATUS | R | 0x00000000 | bit 0 BUSY, bit 1 RX_READY, bit 2 TX_FULL, bit 3 RX_FULL, bit 4 ERROR | Device status | Derived from internal state |
-| 0x10 | TX_DATA | W | 0x00000000 | 7:0 TX byte | Push one byte into TX FIFO | May update TX_COUNT, STATUS, and schedule processing |
+| 0x10 | TX_DATA | W | 0x00000000 | 7:0 TX byte | Push one byte into TX FIFO | May update TX_COUNT, STATUS, IRQ_STATUS, and schedule processing |
 | 0x14 | RX_DATA | R | 0x00000000 | 7:0 RX byte | Pop one byte from RX path | Clears RX_READY when RX becomes empty; may resume processing if TX is pending |
-| 0x18 | IRQ_STATUS | W1C | 0x00000000 | bit 0 RX_READY, bit 1 TX_SPACE, bit 2 ERROR, bit 3 DONE | Pending interrupt bits | Write one to clear pending bits |
+| 0x18 | IRQ_STATUS | W1C | 0x00000000 | bit 0 RX_READY, bit 1 TX_SPACE, bit 2 ERROR, bit 3 DONE | Sticky pending interrupt bits | Write one to clear pending bits and update IRQ line |
 | 0x1c | IRQ_ENABLE | R/W | 0x00000000 | bits match IRQ_STATUS | Per-source interrupt enable mask | May change IRQ line assertion |
 | 0x20 | TX_COUNT | R | 0x00000000 | 7:0 count | TX FIFO occupancy | None |
 | 0x24 | RX_COUNT | R | 0x00000000 | 7:0 count | RX FIFO occupancy | None |
@@ -63,8 +63,16 @@ implemented after the baseline FIFO and IRQ behavior are stable.
 | 2 | ERROR | 0 | Device error occurred |
 | 3 | DONE | 0 | Processing completed |
 
-The IRQ line is asserted only when `CONTROL.IRQ_ENABLE` is set and at least one
-pending `IRQ_STATUS` bit is also enabled in `IRQ_ENABLE`.
+`IRQ_STATUS` bits are sticky until software clears them by writing one to the
+corresponding bit. The IRQ line is asserted only when `CONTROL.IRQ_ENABLE` is
+set and at least one pending `IRQ_STATUS` bit is also enabled in `IRQ_ENABLE`.
+
+Current event sources:
+
+- `RX_READY`: set when timer processing pushes a byte into RX.
+- `TX_SPACE`: set when processing frees space from a previously full TX FIFO.
+- `ERROR`: set when a TX_DATA write is rejected because TX is full.
+- `DONE`: set when timer processing drains the last pending TX byte.
 
 ## Processing Note
 

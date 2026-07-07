@@ -12,6 +12,7 @@
 #include "hw/misc/qemu_mbox.h"
 
 static void qemu_mbox_schedule_processing(QemuMboxState *s);
+static void qemu_mbox_update_irq(QemuMboxState *s);
 
 static uint8_t qemu_mbox_process_byte(uint8_t value)
 {
@@ -43,6 +44,22 @@ static void qemu_mbox_update_status(QemuMboxState *s)
     if (s->rx_count == QEMU_MBOX_FIFO_DEPTH) {
         s->status |= QEMU_MBOX_STATUS_RX_FULL;
     }
+}
+
+static void qemu_mbox_update_irq(QemuMboxState *s)
+{
+    bool level = (s->control & QEMU_MBOX_CTRL_IRQ_ENABLE) &&
+                 (s->irq_status & s->irq_enable);
+
+    if (s->irq) {
+        qemu_set_irq(s->irq, level);
+    }
+}
+
+static void qemu_mbox_raise_irq(QemuMboxState *s, uint32_t events)
+{
+    s->irq_status |= events & QEMU_MBOX_IRQ_VALID_MASK;
+    qemu_mbox_update_irq(s);
 }
 
 /*
@@ -85,15 +102,30 @@ static bool qemu_mbox_fifo_pop(uint8_t *fifo, uint32_t *head,
 
 static void qemu_mbox_process_one(QemuMboxState *s)
 {
+    uint32_t events = 0;
+    bool was_tx_full;
     uint8_t value;
 
     if (s->tx_count == 0 || s->rx_count == QEMU_MBOX_FIFO_DEPTH) {
         return;
     }
 
+    was_tx_full = s->tx_count == QEMU_MBOX_FIFO_DEPTH;
     qemu_mbox_fifo_pop(s->tx_fifo, &s->tx_head, &s->tx_count, &value);
     value = qemu_mbox_process_byte(value);
     qemu_mbox_fifo_push(s->rx_fifo, &s->rx_tail, &s->rx_count, value);
+
+    events |= QEMU_MBOX_IRQ_RX_READY;
+
+    if (was_tx_full) {
+        events |= QEMU_MBOX_IRQ_TX_SPACE;
+    }
+
+    if (s->tx_count == 0) {
+        events |= QEMU_MBOX_IRQ_DONE;
+    }
+
+    qemu_mbox_raise_irq(s, events);
 }
 
 static void qemu_mbox_process_timer(void *opaque)
@@ -146,6 +178,7 @@ static void qemu_mbox_reset_regs(QemuMboxState *s)
     s->rx_tail = 0;
     s->rx_count = 0;
     s->processing = false;
+    qemu_mbox_update_irq(s);
 }
 
 static uint64_t qemu_mbox_read(void *opaque, hwaddr offset, unsigned size)
@@ -239,12 +272,14 @@ static void qemu_mbox_write(void *opaque, hwaddr offset, uint64_t value,
         s->control = value & (QEMU_MBOX_CTRL_ENABLE |
                               QEMU_MBOX_CTRL_LOOPBACK |
                               QEMU_MBOX_CTRL_IRQ_ENABLE);
+        qemu_mbox_update_irq(s);
         break;
 
     case QEMU_MBOX_REG_TX_DATA:
         if (!qemu_mbox_fifo_push(s->tx_fifo, &s->tx_tail, &s->tx_count,
                                  value & 0xff)) {
             s->status |= QEMU_MBOX_STATUS_ERROR;
+            qemu_mbox_raise_irq(s, QEMU_MBOX_IRQ_ERROR);
             qemu_mbox_update_status(s);
             break;
         }
@@ -253,15 +288,14 @@ static void qemu_mbox_write(void *opaque, hwaddr offset, uint64_t value,
         break;
 
     case QEMU_MBOX_REG_IRQ_STATUS:
-        /*
-         * Write-one-to-clear behavior.
-         * IRQ line assertion is handled separately once an IRQ output exists.
-         */
+        /* Write-one-to-clear behavior. */
         s->irq_status &= ~(value & QEMU_MBOX_IRQ_VALID_MASK);
+        qemu_mbox_update_irq(s);
         break;
 
     case QEMU_MBOX_REG_IRQ_ENABLE:
         s->irq_enable = value & QEMU_MBOX_IRQ_VALID_MASK;
+        qemu_mbox_update_irq(s);
         break;
 
     case QEMU_MBOX_REG_RESET:
@@ -300,10 +334,21 @@ static void qemu_mbox_reset(DeviceState *dev)
     qemu_mbox_reset_regs(s);
 }
 
+static int qemu_mbox_post_load(void *opaque, int version_id)
+{
+    QemuMboxState *s = opaque;
+
+    qemu_mbox_update_status(s);
+    qemu_mbox_update_irq(s);
+
+    return 0;
+}
+
 static const VMStateDescription vmstate_qemu_mbox = {
     .name = TYPE_QEMU_MBOX,
     .version_id = 2,
     .minimum_version_id = 2,
+    .post_load = qemu_mbox_post_load,
     .fields = (const VMStateField[]) {
         VMSTATE_UINT32(control, QemuMboxState),
         VMSTATE_UINT32(status, QemuMboxState),
@@ -338,6 +383,7 @@ static void qemu_mbox_init(Object *obj)
                           QEMU_MBOX_MMIO_SIZE);
 
     sysbus_init_mmio(sbd, &s->mmio);
+    sysbus_init_irq(sbd, &s->irq);
 
     s->process_timer = timer_new_ns(QEMU_CLOCK_VIRTUAL,
                                     qemu_mbox_process_timer,

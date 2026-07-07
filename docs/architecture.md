@@ -34,7 +34,7 @@ and timer-backed processing delay. Later milestones add interrupt generation.
 ## QEMU Device Model
 
 The QEMU device is a `SysBusDevice` named `virt-mbox`. It owns one MMIO memory
-region and one processing timer, and later will own one IRQ line.
+region, one processing timer, and one IRQ line.
 
 The final QEMU model should provide:
 
