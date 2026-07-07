@@ -42,6 +42,10 @@ Initial QTest cases:
 - verify BUSY is set while processing is pending
 - verify RX full and TX full status
 - verify TX overflow sets error status
+- verify IRQ_STATUS RX_READY and DONE bits
+- verify IRQ_STATUS write-one-to-clear behavior
+- verify IRQ_ENABLE masks unsupported bits
+- verify TX_SPACE and ERROR interrupt status events
 - reject invalid access sizes through guest-error logging where practical in a
   later runnable test
 

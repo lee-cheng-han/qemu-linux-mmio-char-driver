@@ -171,6 +171,9 @@ Add tests for:
 - IRQ enable and masking behavior
 - savevm/loadvm or migration-state smoke coverage if practical
 
+Status: expanded in the project-owned QTest skeleton. Runnable QTest execution
+still requires applying the integration package to a real QEMU checkout.
+
 ## Step 8: Linux Driver Skeleton
 
 Goal: Linux can probe the device.

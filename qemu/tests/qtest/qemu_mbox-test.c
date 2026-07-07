@@ -38,6 +38,13 @@
 #define QEMU_MBOX_STATUS_RX_FULL  (1U << 3)
 #define QEMU_MBOX_STATUS_ERROR    (1U << 4)
 #define QEMU_MBOX_IRQ_RX_READY    (1U << 0)
+#define QEMU_MBOX_IRQ_TX_SPACE    (1U << 1)
+#define QEMU_MBOX_IRQ_ERROR       (1U << 2)
+#define QEMU_MBOX_IRQ_DONE        (1U << 3)
+#define QEMU_MBOX_IRQ_VALID_MASK  (QEMU_MBOX_IRQ_RX_READY | \
+                                   QEMU_MBOX_IRQ_TX_SPACE | \
+                                   QEMU_MBOX_IRQ_ERROR |    \
+                                   QEMU_MBOX_IRQ_DONE)
 
 static uint32_t qemu_mbox_readl(uint32_t reg)
 {
@@ -159,6 +166,85 @@ static void test_qemu_mbox_fifo_full_status(void)
                     QEMU_MBOX_STATUS_ERROR);
 }
 
+static void test_qemu_mbox_irq_status_done_w1c(void)
+{
+    uint32_t irq_status;
+
+    qemu_mbox_reset();
+
+    qemu_mbox_writel(QEMU_MBOX_REG_CONTROL, QEMU_MBOX_CTRL_IRQ_ENABLE);
+    qemu_mbox_writel(QEMU_MBOX_REG_IRQ_ENABLE,
+                     QEMU_MBOX_IRQ_RX_READY | QEMU_MBOX_IRQ_DONE);
+    qemu_mbox_writel(QEMU_MBOX_REG_TX_DATA, 'q');
+    qemu_mbox_step_processing();
+
+    irq_status = qemu_mbox_readl(QEMU_MBOX_REG_IRQ_STATUS);
+    g_assert_cmphex(irq_status & QEMU_MBOX_IRQ_RX_READY, ==,
+                    QEMU_MBOX_IRQ_RX_READY);
+    g_assert_cmphex(irq_status & QEMU_MBOX_IRQ_DONE, ==,
+                    QEMU_MBOX_IRQ_DONE);
+
+    qemu_mbox_writel(QEMU_MBOX_REG_IRQ_STATUS, QEMU_MBOX_IRQ_RX_READY);
+    irq_status = qemu_mbox_readl(QEMU_MBOX_REG_IRQ_STATUS);
+    g_assert_cmphex(irq_status & QEMU_MBOX_IRQ_RX_READY, ==, 0);
+    g_assert_cmphex(irq_status & QEMU_MBOX_IRQ_DONE, ==,
+                    QEMU_MBOX_IRQ_DONE);
+
+    qemu_mbox_writel(QEMU_MBOX_REG_IRQ_STATUS, QEMU_MBOX_IRQ_DONE);
+    g_assert_cmphex(qemu_mbox_readl(QEMU_MBOX_REG_IRQ_STATUS), ==, 0);
+}
+
+static void test_qemu_mbox_irq_enable_mask(void)
+{
+    qemu_mbox_reset();
+
+    qemu_mbox_writel(QEMU_MBOX_REG_IRQ_ENABLE,
+                     QEMU_MBOX_IRQ_RX_READY | (1U << 31));
+    g_assert_cmphex(qemu_mbox_readl(QEMU_MBOX_REG_IRQ_ENABLE), ==,
+                    QEMU_MBOX_IRQ_RX_READY);
+
+    qemu_mbox_writel(QEMU_MBOX_REG_IRQ_ENABLE, QEMU_MBOX_IRQ_VALID_MASK);
+    g_assert_cmphex(qemu_mbox_readl(QEMU_MBOX_REG_IRQ_ENABLE), ==,
+                    QEMU_MBOX_IRQ_VALID_MASK);
+}
+
+static void test_qemu_mbox_irq_tx_space_and_error(void)
+{
+    uint32_t irq_status;
+    int i;
+
+    qemu_mbox_reset();
+
+    qemu_mbox_writel(QEMU_MBOX_REG_IRQ_ENABLE, QEMU_MBOX_IRQ_VALID_MASK);
+
+    for (i = 0; i < QEMU_MBOX_FIFO_DEPTH; i++) {
+        qemu_mbox_writel(QEMU_MBOX_REG_TX_DATA, 'a' + i);
+        qemu_mbox_step_processing();
+    }
+
+    qemu_mbox_writel(QEMU_MBOX_REG_IRQ_STATUS, QEMU_MBOX_IRQ_VALID_MASK);
+
+    for (i = 0; i < QEMU_MBOX_FIFO_DEPTH; i++) {
+        qemu_mbox_writel(QEMU_MBOX_REG_TX_DATA, 'A' + i);
+    }
+
+    g_assert_cmpuint(qemu_mbox_readl(QEMU_MBOX_REG_RX_DATA), ==, 'A');
+    qemu_mbox_step_processing();
+
+    irq_status = qemu_mbox_readl(QEMU_MBOX_REG_IRQ_STATUS);
+    g_assert_cmphex(irq_status & QEMU_MBOX_IRQ_TX_SPACE, ==,
+                    QEMU_MBOX_IRQ_TX_SPACE);
+    g_assert_cmphex(irq_status & QEMU_MBOX_IRQ_RX_READY, ==,
+                    QEMU_MBOX_IRQ_RX_READY);
+
+    qemu_mbox_writel(QEMU_MBOX_REG_TX_DATA, '!');
+    qemu_mbox_writel(QEMU_MBOX_REG_TX_DATA, '?');
+
+    irq_status = qemu_mbox_readl(QEMU_MBOX_REG_IRQ_STATUS);
+    g_assert_cmphex(irq_status & QEMU_MBOX_IRQ_ERROR, ==,
+                    QEMU_MBOX_IRQ_ERROR);
+}
+
 int main(int argc, char **argv)
 {
     int ret;
@@ -174,6 +260,12 @@ int main(int argc, char **argv)
                    test_qemu_mbox_zero_byte_tx_count);
     qtest_add_func("/vmbox/fifo_full_status",
                    test_qemu_mbox_fifo_full_status);
+    qtest_add_func("/vmbox/irq_status_done_w1c",
+                   test_qemu_mbox_irq_status_done_w1c);
+    qtest_add_func("/vmbox/irq_enable_mask",
+                   test_qemu_mbox_irq_enable_mask);
+    qtest_add_func("/vmbox/irq_tx_space_and_error",
+                   test_qemu_mbox_irq_tx_space_and_error);
 
     ret = g_test_run();
     qtest_end();

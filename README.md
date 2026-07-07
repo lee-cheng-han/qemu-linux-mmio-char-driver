@@ -42,7 +42,7 @@ Implemented:
 - Testing, bring-up, and demo plans
 - Initial QEMU MMIO device source files
 - QEMU integration notes and Meson/Kconfig/device-enable fragments
-- QTest skeleton for the minimal MMIO register contract
+- QTest skeleton for MMIO, FIFO, timer, and IRQ register behavior
 - ID, VERSION, CONTROL, STATUS, TX_DATA, RX_DATA, IRQ_STATUS, IRQ_ENABLE,
   TX_COUNT, RX_COUNT, FIFO_DEPTH, and RESET register definitions
 - Real TX/RX FIFO state in the QEMU device model
