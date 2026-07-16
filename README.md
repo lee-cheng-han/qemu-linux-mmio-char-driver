@@ -119,6 +119,19 @@ This validates repository hygiene and builds the userspace regression test. Full
 runtime validation still requires applying the QEMU and Linux fragments to real
 source trees and booting the stack.
 
+## External Integration Helpers
+
+```sh
+scripts/apply-qemu.sh ~/work/qemu
+scripts/apply-linux.sh ~/work/linux
+scripts/build-userspace.sh /tmp/vmbox_test
+scripts/run-e2e-checklist.sh
+```
+
+The apply scripts copy this repository's QEMU/Linux payload into external
+source checkouts and append the local build fragments if they are not already
+present.
+
 ## License
 
 This repository uses the MIT license for project documentation and scripts.

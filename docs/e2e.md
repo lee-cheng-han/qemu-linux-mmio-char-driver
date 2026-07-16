@@ -17,6 +17,21 @@ userspace selftests pass
 debugfs/sysfs state is readable
 ```
 
+## Helper Scripts
+
+From this repository:
+
+```sh
+scripts/apply-qemu.sh ~/work/qemu
+scripts/apply-linux.sh ~/work/linux
+scripts/build-userspace.sh /tmp/vmbox_test
+scripts/run-e2e-checklist.sh
+```
+
+The apply scripts are intentionally conservative: they copy source payloads and
+append integration fragments only when the target checkout does not already
+contain the expected marker.
+
 ## QEMU Command Shape
 
 ```sh

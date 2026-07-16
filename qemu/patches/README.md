@@ -99,6 +99,12 @@ configs/devices/aarch64-softmmu/default.mak
 
 and paste the matching fragment contents from this directory.
 
+Or use the repository helper from this repository root:
+
+```sh
+scripts/apply-qemu.sh /path/to/qemu-checkout
+```
+
 ## Minimal Build Check
 
 From a QEMU checkout with the payload and build-system edits applied:

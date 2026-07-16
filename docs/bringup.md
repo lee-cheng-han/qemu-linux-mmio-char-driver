@@ -462,7 +462,8 @@ all tests pass
 ```
 
 Status: documented in `docs/e2e.md`, including command shape and guest
-validation commands.
+validation commands. Helper scripts exist under `scripts/` to apply QEMU/Linux
+payloads, build the userspace test, and print the E2E checklist.
 
 ## Step 18: Final Demo And Polish
 

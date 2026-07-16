@@ -7,7 +7,7 @@ help:
 	@echo "                Build userspace regression tests"
 
 userspace-build:
-	$(CC) -Wall -Wextra -O2 -Ikernel/include -o /tmp/vmbox_test tests/selftests/vmbox_test.c
+	scripts/build-userspace.sh /tmp/vmbox_test
 
 check:
 	test -f README.md
@@ -37,8 +37,13 @@ check:
 	test -f kernel/drivers/misc/vmbox.c
 	test -f kernel/drivers/misc/Kconfig.fragment
 	test -f kernel/drivers/misc/Makefile.fragment
+	test -f kernel/patches/README.md
 	test -f kernel/include/uapi/linux/vmbox.h
 	test -f scripts/udev/99-vmbox.rules
+	test -f scripts/apply-qemu.sh
+	test -f scripts/apply-linux.sh
+	test -f scripts/build-userspace.sh
+	test -f scripts/run-e2e-checklist.sh
 	test -f tests/fuzz/README.md
 	test -f tests/selftests/vmbox_test.c
 	test -f tests/scripts/vmbox_robustness.sh
@@ -50,6 +55,10 @@ check:
 	grep -q "SPDX-License-Identifier" kernel/drivers/misc/vmbox.c
 	grep -q "SPDX-License-Identifier" kernel/include/uapi/linux/vmbox.h
 	grep -q "SPDX-License-Identifier" scripts/udev/99-vmbox.rules
+	grep -q "SPDX-License-Identifier" scripts/apply-qemu.sh
+	grep -q "SPDX-License-Identifier" scripts/apply-linux.sh
+	grep -q "SPDX-License-Identifier" scripts/build-userspace.sh
+	grep -q "SPDX-License-Identifier" scripts/run-e2e-checklist.sh
 	grep -q "SPDX-License-Identifier" tests/selftests/vmbox_test.c
 	grep -q "SPDX-License-Identifier" tests/scripts/vmbox_robustness.sh
 	@if git grep -n '[[:blank:]]$$' -- '*.c' '*.h' '*.md' '*.yml' '*.yaml' '*.fragment' '*.rules'; then \
