@@ -9,24 +9,6 @@ exposes `/dev/vmbox0` and supports FIFO-backed read/write, interrupt-driven
 blocking I/O, `poll()`, ioctl status/statistics, sysfs attributes, and debugfs
 diagnostics.
 
-## What This Demonstrates
-
-This repository is intended to look and behave like a real kernel/QEMU bring-up
-project, It includes:
-
-- a documented MMIO register contract
-- a QEMU device model with FIFOs, IRQ state, timer-backed processing, and
-  VMState migration support
-- a Linux platform driver using `readl()`/`writel()`, IRQ handling, wait queues,
-  character-device registration, and safe remove/unload lifetime rules
-- stable userspace UAPI structs with ABI size guards
-- sysfs attributes for stable observability and debugfs files for developer
-  diagnostics
-- a single-open `/dev/vmbox0` policy with documented semantics
-- QEMU/Linux integration helper scripts
-- userspace regression and robustness test scaffolding
-- a working ARM64 QEMU boot demo with captured output
-
 ## Architecture
 
 ```text
