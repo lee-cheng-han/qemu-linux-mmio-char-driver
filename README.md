@@ -12,7 +12,7 @@ diagnostics.
 ## What This Demonstrates
 
 This repository is intended to look and behave like a real kernel/QEMU bring-up
-project, not just a toy `/dev` example. It includes:
+project, It includes:
 
 - a documented MMIO register contract
 - a QEMU device model with FIFOs, IRQ state, timer-backed processing, and
